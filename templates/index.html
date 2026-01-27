@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wing Mission Share</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Wing Mission Share</h1>
+            <div class="system-field">
+                <label for="system">System</label>
+                <input type="text" id="system" value="Anana">
+            </div>
+        </header>
+
+        <div id="party-alert" class="party-alert hidden">
+            <div class="party-alert-content">
+                <h2>🎯 PARTY READY</h2>
+                <p>4 CMDRs ready to wing up</p>
+                <button id="dismiss-alert" class="btn-go">Let's Go!</button>
+            </div>
+        </div>
+
+        <div class="ready-bar">
+            <div class="slots">
+                <span class="slot" id="slot-0"></span>
+                <span class="slot" id="slot-1"></span>
+                <span class="slot" id="slot-2"></span>
+                <span class="slot" id="slot-3"></span>
+            </div>
+            <span id="ready-count">0/4</span>
+            <label class="sound-toggle">
+                <input type="checkbox" id="sound-toggle"> 🔔
+            </label>
+        </div>
+
+        <form id="add-form" class="add-form">
+            <div class="field">
+                <label for="cmdr">CMDR Name</label>
+                <input type="text" id="cmdr" placeholder="e.g. Jameson" required>
+            </div>
+            <div class="field num-field">
+                <label for="credits">Credits (M)</label>
+                <input type="number" id="credits" placeholder="456" required min="1" max="999">
+            </div>
+            <div class="field num-field">
+                <label for="stations">Stations</label>
+                <input type="number" id="stations" placeholder="4" value="4" min="1" max="10">
+            </div>
+            <div class="field num-field">
+                <label for="missions">Missions</label>
+                <input type="number" id="missions" placeholder="20" value="20" min="1" max="20">
+            </div>
+            <div class="field time-field">
+                <label for="available-from">From</label>
+                <input type="time" id="available-from">
+            </div>
+            <div class="field time-field">
+                <label for="available-to">Until</label>
+                <input type="time" id="available-to">
+            </div>
+            <button type="submit">Join Queue</button>
+        </form>
+
+        <table id="queue-table">
+            <thead>
+                <tr>
+                    <th>CMDR</th>
+                    <th>Credits</th>
+                    <th>Stations</th>
+                    <th>Missions</th>
+                    <th>Available</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="queue-body">
+            </tbody>
+        </table>
+
+        <div class="footer-actions">
+            <button id="copy-btn">📋 Copy for Discord</button>
+            <button id="clear-btn" class="btn-clear">Clear Mine</button>
+            <button id="admin-clear-btn" class="btn-admin">Admin Clear</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
