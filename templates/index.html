@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wing Mission Share</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+    <meta property="og:title" content="Wing Mission Share">
+    <meta property="og:description" content="Coordinate wing massacre & mining missions in Elite Dangerous">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#f0883e">
+    <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
     <div class="container">
@@ -18,9 +23,9 @@
 
         <div id="party-alert" class="party-alert hidden">
             <div class="party-alert-content">
-                <h2>🎯 PARTY READY</h2>
-                <p>4 CMDRs ready to wing up</p>
-                <button id="dismiss-alert" class="btn-go">Let's Go!</button>
+                <h2>🎯 WING FORMING</h2>
+                <p>4 CMDRs ready - click Ready Up!</p>
+                <button id="dismiss-alert" class="btn-go">Got it</button>
             </div>
         </div>
 
@@ -65,6 +70,8 @@
             <button type="submit">Join Queue</button>
         </form>
 
+        <div id="active-wings"></div>
+
         <table id="queue-table">
             <thead>
                 <tr>
@@ -84,11 +91,43 @@
         <div class="footer-actions">
             <button id="copy-btn">📋 Copy for Discord</button>
             <button id="clear-btn" class="btn-clear">Clear Mine</button>
-            <button id="admin-clear-btn" class="btn-admin">Admin Clear</button>
         </div>
     </div>
 
     <div id="toast" class="toast"></div>
-    <script src="/static/app.js"></script>
+
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Entry</h3>
+            <input type="hidden" id="edit-id">
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label>Credits (M)</label>
+                    <input type="number" id="edit-credits" min="1" max="999">
+                </div>
+                <div class="modal-field">
+                    <label>Stations</label>
+                    <input type="number" id="edit-stations" min="1" max="10">
+                </div>
+                <div class="modal-field">
+                    <label>Missions</label>
+                    <input type="number" id="edit-missions" min="1" max="20">
+                </div>
+                <div class="modal-field">
+                    <label>From</label>
+                    <input type="time" id="edit-from">
+                </div>
+                <div class="modal-field">
+                    <label>Until</label>
+                    <input type="time" id="edit-until">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="saveEdit()" class="btn-save">Save</button>
+                <button onclick="closeEditModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/app.js?v=12"></script>
 </body>
 </html>

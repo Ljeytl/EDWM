@@ -1,5 +1,7 @@
 let queue = [];
+let wings = [];
 let partyAlertShown = false;
+const READY_UP_TIMEOUT = 15 * 60 * 1000; // 15 minutes to ready up
 
 // Track your own entries in localStorage (anti-grief)
 function getMyEntries() {
@@ -22,23 +24,32 @@ function isMyEntry(id) {
 }
 
 async function fetchQueue() {
-    const res = await fetch('/api/queue');
-    queue = await res.json();
+    const [queueRes, wingsRes] = await Promise.all([
+        fetch('/api/queue'),
+        fetch('/api/wings')
+    ]);
+    queue = await queueRes.json();
+    wings = await wingsRes.json();
+    checkReadyUpTimeouts();
+    renderWings();
     renderQueue();
     checkPartyReady();
 }
 
 function isWithinTimeWindow(entry) {
     const now = new Date();
+    const GRACE_MINS = 5; // 5 min grace on both ends
 
     if (entry.availableFromUTC) {
         const from = new Date(entry.availableFromUTC);
-        if (now < from) return false;
+        // Ready up to 5 mins early
+        if (now < new Date(from.getTime() - GRACE_MINS * 60 * 1000)) return false;
     }
 
     if (entry.availableToUTC) {
         const until = new Date(entry.availableToUTC);
-        if (now > until) return false;
+        // Stay ready up to 5 mins after window closes
+        if (now > new Date(until.getTime() + GRACE_MINS * 60 * 1000)) return false;
     }
 
     return true;
@@ -65,15 +76,130 @@ function getReadyQueue() {
         .sort((a, b) => new Date(a.readySince || a.joined) - new Date(b.readySince || b.joined));
 }
 
+// Group ready queue into potential wings (4 unique CMDRs each)
+// Only returns complete wings (exactly 4 unique CMDRs)
+function getPotentialWings() {
+    const ready = getReadyQueue();
+    const potentialWings = [];
+    const assigned = new Set();
+
+    while (true) {
+        const wing = [];
+        const usedCmdrs = new Set();
+
+        for (const entry of ready) {
+            if (assigned.has(entry.id)) continue;
+            const cmdrLower = entry.cmdr.toLowerCase().trim();
+            if (usedCmdrs.has(cmdrLower)) continue;
+
+            wing.push(entry);
+            usedCmdrs.add(cmdrLower);
+
+            if (wing.length === 4) break;
+        }
+
+        // Only add complete wings with 4 unique CMDRs
+        if (wing.length === 4) {
+            potentialWings.push(wing);
+            wing.forEach(e => assigned.add(e.id));
+        } else {
+            break; // Not enough unique CMDRs for more wings
+        }
+    }
+
+    return potentialWings;
+}
+
+function getWingNumber(entryId) {
+    const potentialWings = getPotentialWings();
+    for (let i = 0; i < potentialWings.length; i++) {
+        if (potentialWings[i].some(e => e.id === entryId)) {
+            return i + 1;
+        }
+    }
+    return null; // Not in a potential wing yet
+}
+
 function checkPartyReady() {
-    const readyQueue = getReadyQueue();
-    if (readyQueue.length >= 4 && !partyAlertShown) {
-        showPartyAlert(readyQueue.slice(0, 4));
-        playPing();
-        partyAlertShown = true;
-    } else if (readyQueue.length < 4) {
+    const potentialWings = getPotentialWings();
+
+    // Check if user is in any potential wing that's ready to form
+    for (const wing of potentialWings) {
+        const userInWing = wing.some(e => isMyEntry(e.id));
+        const allReadiedUp = wing.every(e => e.readyUp);
+        const userReadiedUp = wing.find(e => isMyEntry(e.id))?.readyUp;
+
+        if (userInWing && !userReadiedUp && !partyAlertShown) {
+            showPartyAlert(wing);
+            playPing();
+            partyAlertShown = true;
+            return;
+        }
+    }
+
+    // Reset if user not in any wing
+    const userInAnyWing = potentialWings.some(w => w.some(e => isMyEntry(e.id)));
+    if (!userInAnyWing) {
         partyAlertShown = false;
     }
+}
+
+function checkReadyUpTimeouts() {
+    const now = Date.now();
+    queue.forEach(entry => {
+        if (entry.readyUp && entry.readyUpTime) {
+            const readyUpAt = new Date(entry.readyUpTime).getTime();
+            if (now - readyUpAt > READY_UP_TIMEOUT) {
+                // Reset on server
+                resetReadyUp(entry.id);
+            }
+        }
+    });
+}
+
+async function resetReadyUp(id) {
+    await fetch(`/api/queue/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ readyUp: false, readyUpTime: null })
+    });
+}
+
+async function readyUp(id) {
+    await fetch(`/api/ready-up/${id}`, { method: 'POST' });
+    fetchQueue();
+}
+
+async function completeWing(wingId) {
+    await fetch(`/api/wings/${wingId}/complete`, { method: 'POST' });
+    toast('Wing complete! o7');
+    fetchQueue();
+}
+
+function renderWings() {
+    const container = document.getElementById('active-wings');
+    const sysWings = wings.filter(w => w.system.toLowerCase() === getCurrentSystem());
+
+    if (sysWings.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = sysWings.map(wing => {
+        const isMember = wing.members.some(m => isMyEntry(m.id));
+        return `
+        <div class="active-wing">
+            <div class="wing-header">
+                <span class="wing-title">🚀 Wing Active</span>
+                ${isMember ? `<button onclick="completeWing('${wing.id}')" class="btn-complete-wing">Wing Complete</button>` : ''}
+            </div>
+            <div class="wing-members">
+                ${wing.members.map(m => `
+                    <span class="wing-member ${isMyEntry(m.id) ? 'mine' : ''}">${esc(m.cmdr)} (${m.credits}M)</span>
+                `).join('')}
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function showPartyAlert(party) {
@@ -133,7 +259,19 @@ function renderQueue() {
         return;
     }
 
-    updateSlots(readyQueue.length, readyQueue.slice(0, 4));
+    // Show unique CMDRs in slots (max 4)
+    const potentialWings = getPotentialWings();
+    const uniqueCmdrs = [];
+    const seenCmdrs = new Set();
+    for (const entry of readyQueue) {
+        const cmdrLower = entry.cmdr.toLowerCase().trim();
+        if (!seenCmdrs.has(cmdrLower)) {
+            uniqueCmdrs.push(entry);
+            seenCmdrs.add(cmdrLower);
+            if (uniqueCmdrs.length === 4) break;
+        }
+    }
+    updateSlots(uniqueCmdrs.length, uniqueCmdrs);
 
     // Sort: ready first (by readySince), then waiting (by joined)
     const sorted = [...systemQueue].sort((a, b) => {
@@ -149,7 +287,8 @@ function renderQueue() {
 
     tbody.innerHTML = sorted.map(entry => {
         const status = getEffectiveStatus(entry);
-        const inParty = readyQueue.slice(0, 4).some(e => e.id === entry.id);
+        const wingNum = getWingNumber(entry.id);
+        const inPotentialWing = wingNum !== null;
         const pos = readyQueue.findIndex(e => e.id === entry.id) + 1;
         const mine = isMyEntry(entry.id);
         const from = entry.availableFromUTC ? utcToDisplay(entry.availableFromUTC) : '';
@@ -160,24 +299,37 @@ function renderQueue() {
         else if (until) timeDisplay = `until ${until}`;
 
         return `
-        <tr class="${status} ${inParty ? 'in-party' : ''} ${mine ? 'mine' : ''}">
-            <td class="cmdr">${esc(entry.cmdr)}${mine ? ' <span class="you">(you)</span>' : ''}</td>
+        <tr class="${status} ${inPotentialWing ? 'in-party' : ''} ${mine ? 'mine' : ''}">
+            <td class="cmdr">${esc(entry.cmdr)}${mine ? ' <span class="you">(you)</span>' : ''}${wingNum ? ` <span class="wing-num">W${wingNum}</span>` : ''}</td>
             <td class="stack">${entry.credits}M</td>
             <td class="stations">${entry.stations}</td>
             <td class="missions">${entry.missions || 20}</td>
             <td class="available">${timeDisplay}</td>
             <td class="status-cell">
-                ${status === 'ready'
-                    ? `<span class="badge ready">#${pos} Ready</span>`
+                ${status === 'ready' && entry.readyUp
+                    ? `<span class="badge readied-up">✓ W${wingNum}</span>`
+                    : status === 'ready' && wingNum
+                    ? `<span class="badge ready">W${wingNum} #${pos}</span>`
+                    : status === 'ready'
+                    ? `<span class="badge ready">Ready</span>`
                     : `<span class="badge waiting">Waiting</span>`
                 }
             </td>
             <td class="actions">
                 ${mine ? `
-                    ${status === 'ready'
-                        ? `<button onclick="turnedIn('${entry.id}')" class="btn-done">Done</button>`
-                        : `<button onclick="markReady('${entry.id}')" class="btn-ready">Ready</button>`
+                    ${status === 'ready' && inPotentialWing && !entry.readyUp
+                        ? `<button onclick="readyUp('${entry.id}')" class="btn-readyup">Ready Up!</button>`
+                        : ''
                     }
+                    ${status === 'ready' && !inPotentialWing
+                        ? `<button onclick="turnedIn('${entry.id}')" class="btn-done">Leave</button>`
+                        : ''
+                    }
+                    ${status !== 'ready'
+                        ? `<button onclick="markReady('${entry.id}')" class="btn-ready">Ready</button>`
+                        : ''
+                    }
+                    <button onclick="editEntry('${entry.id}')" class="btn-edit">✏️</button>
                     <button onclick="removeEntry('${entry.id}')" class="btn-x">×</button>
                 ` : ''}
             </td>
@@ -203,12 +355,43 @@ function updateSlots(count, party) {
     countEl.className = count >= 4 ? 'full' : '';
 }
 
-function localTimeToUTC(timeStr) {
+function localTimeToUTC(timeStr, isUntil = false, fromTimeStr = '') {
     if (!timeStr) return '';
     const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h, m, 0, 0);
+
     const now = new Date();
-    now.setHours(h, m, 0, 0);
-    return now.toISOString();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    // If "from" time is more than 1 hour in the past, assume tomorrow
+    // Gives grace period for human error (e.g., entering 6:05 at 6:06)
+    if (!isUntil && date < oneHourAgo) {
+        date.setDate(date.getDate() + 1);
+    }
+
+    // Smart "next day" logic for "until" times
+    if (isUntil) {
+        // If until time is in the past, assume tomorrow
+        if (date < now) {
+            date.setDate(date.getDate() + 1);
+        }
+        // If from time exists and until is earlier, assume next day
+        if (fromTimeStr) {
+            const [fh, fm] = fromTimeStr.split(':').map(Number);
+            if (h < fh || (h === fh && m < fm)) {
+                // Until is earlier than from - must be next day
+                const fromDate = new Date();
+                fromDate.setHours(fh, fm, 0, 0);
+                if (fromDate < now) fromDate.setDate(fromDate.getDate() + 1);
+                if (date <= fromDate) {
+                    date.setDate(date.getDate() + 1);
+                }
+            }
+        }
+    }
+
+    return date.toISOString();
 }
 
 function get24HoursFromNow() {
@@ -220,7 +403,17 @@ function get24HoursFromNow() {
 function utcToDisplay(isoStr) {
     if (!isoStr) return '';
     const d = new Date(isoStr);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = d.toDateString() === tomorrow.toDateString();
+
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    if (isToday) return time;
+    if (isTomorrow) return `tomorrow ${time}`;
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + time;
 }
 
 async function addEntry(e) {
@@ -234,7 +427,7 @@ async function addEntry(e) {
         missions: parseInt(document.getElementById('missions').value) || 20,
         system: document.getElementById('system').value || 'Anana',
         availableFromUTC: localTimeToUTC(fromLocal),
-        availableToUTC: localTimeToUTC(untilLocal) || get24HoursFromNow(),
+        availableToUTC: localTimeToUTC(untilLocal, true, fromLocal) || get24HoursFromNow(),
         status: 'ready',
         readySince: new Date().toISOString()
     };
@@ -273,6 +466,57 @@ async function removeEntry(id) {
     if (!isMyEntry(id)) return;
     await fetch(`/api/queue/${id}`, { method: 'DELETE' });
     removeMyEntry(id);
+    fetchQueue();
+}
+
+function editEntry(id) {
+    const entry = queue.find(e => e.id === id);
+    if (!entry || !isMyEntry(id)) return;
+
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-credits').value = entry.credits;
+    document.getElementById('edit-stations').value = entry.stations;
+    document.getElementById('edit-missions').value = entry.missions || 20;
+    document.getElementById('edit-from').value = utcToTimeInput(entry.availableFromUTC);
+    document.getElementById('edit-until').value = utcToTimeInput(entry.availableToUTC);
+
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function saveEdit() {
+    const id = document.getElementById('edit-id').value;
+    const newFrom = document.getElementById('edit-from').value;
+    const newUntil = document.getElementById('edit-until').value;
+
+    updateEntry(id, {
+        credits: parseInt(document.getElementById('edit-credits').value) || 0,
+        stations: parseInt(document.getElementById('edit-stations').value) || 4,
+        missions: parseInt(document.getElementById('edit-missions').value) || 20,
+        availableFromUTC: localTimeToUTC(newFrom),
+        availableToUTC: localTimeToUTC(newUntil, true, newFrom) || get24HoursFromNow()
+    });
+
+    closeEditModal();
+}
+
+function utcToTimeInput(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
+}
+
+async function updateEntry(id, data) {
+    await fetch(`/api/queue/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
     fetchQueue();
 }
 
@@ -332,28 +576,9 @@ function esc(text) {
     return d.innerHTML;
 }
 
-async function adminClear() {
-    const pw = prompt('Admin password:');
-    if (!pw) return;
-    const res = await fetch('/api/queue/admin-clear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw })
-    });
-    if (res.ok) {
-        toast('Queue cleared!');
-        partyAlertShown = false;
-        hidePartyAlert();
-        fetchQueue();
-    } else {
-        toast('Wrong password');
-    }
-}
-
 document.getElementById('add-form').addEventListener('submit', addEntry);
 document.getElementById('copy-btn').addEventListener('click', copyForDiscord);
 document.getElementById('clear-btn').addEventListener('click', clearMyEntries);
-document.getElementById('admin-clear-btn').addEventListener('click', adminClear);
 document.getElementById('dismiss-alert').addEventListener('click', hidePartyAlert);
 document.getElementById('system').addEventListener('input', renderQueue);
 

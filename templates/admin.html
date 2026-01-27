@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WMM Admin</title>
+    <link rel="stylesheet" href="/static/style.css?v=5">
+    <style>
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .admin-header h1 { color: #f85149; }
+        .back-link { color: #58a6ff; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+
+        .login-form {
+            max-width: 300px;
+            margin: 100px auto;
+            text-align: center;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 6px;
+        }
+        .login-form button {
+            width: 100%;
+            padding: 10px;
+            background: #238636;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .admin-content { display: none; }
+        .admin-content.visible { display: block; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: #161b22;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f0883e;
+        }
+        .stat-label {
+            color: #8b949e;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .admin-section {
+            background: #161b22;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .admin-section h2 {
+            color: #c9d1d9;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .admin-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .admin-btn.danger {
+            background: #f85149;
+            color: #fff;
+        }
+        .admin-btn.warning {
+            background: #d29922;
+            color: #0d1117;
+        }
+        .admin-btn.info {
+            background: #1f6feb;
+            color: #fff;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .history-table th {
+            text-align: left;
+            padding: 8px;
+            background: #0d1117;
+            color: #8b949e;
+            font-weight: 500;
+        }
+        .history-table td {
+            padding: 8px;
+            border-bottom: 1px solid #21262d;
+        }
+        .history-table tr:hover {
+            background: #0d1117;
+        }
+
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-badge.left { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+        .status-badge.expired { background: rgba(139, 148, 158, 0.2); color: #8b949e; }
+        .status-badge.wing_formed { background: rgba(35, 134, 54, 0.2); color: #3fb950; }
+        .status-badge.admin_cleared { background: rgba(187, 128, 9, 0.2); color: #d29922; }
+
+        .queue-preview {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .debug-info {
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 4px;
+        }
+        .debug-info div { margin: 4px 0; }
+        .debug-ok { color: #3fb950; }
+        .debug-warn { color: #d29922; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="login" class="login-form">
+            <h2 style="color: #f85149; margin-bottom: 20px;">Admin Login</h2>
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+
+        <div id="admin" class="admin-content">
+            <div class="admin-header">
+                <h1>Admin Panel</h1>
+                <a href="/" class="back-link">← Back to Queue</a>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-queue">0</div>
+                    <div class="stat-label">In Queue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-wings">0</div>
+                    <div class="stat-label">Active Wings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-history">0</div>
+                    <div class="stat-label">History Records</div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Current Queue</h2>
+                <div id="queue-preview" class="queue-preview"></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Actions</h2>
+                <div class="admin-actions">
+                    <button onclick="exportData()" class="admin-btn info">Export Backup</button>
+                    <button onclick="document.getElementById('import-file').click()" class="admin-btn info">Import Backup</button>
+                    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+                    <button onclick="refresh()" class="admin-btn info">Refresh Data</button>
+                    <button onclick="clearQueue()" class="admin-btn danger">Clear All Queue</button>
+                    <button onclick="clearHistory()" class="admin-btn warning">Clear History</button>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Debug Info</h2>
+                <div id="debug-info" class="debug-info"></div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Entry History (Last 100)</h2>
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>CMDR</th>
+                            <th>Credits</th>
+                            <th>System</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminPw = '';
+
+        async function login() {
+            adminPw = document.getElementById('password').value;
+            const res = await fetch('/api/admin/debug', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            if (res.ok) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('admin').classList.add('visible');
+                refresh();
+            } else {
+                alert('Wrong password');
+            }
+        }
+
+        async function refresh() {
+            const [queueRes, wingsRes, historyRes, debugRes] = await Promise.all([
+                fetch('/api/queue'),
+                fetch('/api/wings'),
+                fetch('/api/admin/history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPw })
+                }),
+                fetch('/api/admin/debug', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: adminPw })
+                })
+            ]);
+
+            const queue = await queueRes.json();
+            const wings = await wingsRes.json();
+            const history = await historyRes.json();
+            const debug = await debugRes.json();
+
+            document.getElementById('stat-queue').textContent = queue.length;
+            document.getElementById('stat-wings').textContent = wings.length;
+            document.getElementById('stat-history').textContent = history.length;
+
+            // Queue preview
+            if (queue.length === 0) {
+                document.getElementById('queue-preview').innerHTML = '<p style="color: #8b949e;">Queue is empty</p>';
+            } else {
+                document.getElementById('queue-preview').innerHTML = queue.map(e => `
+                    <div style="padding: 6px 0; border-bottom: 1px solid #21262d;">
+                        <span style="color: #58a6ff;">${esc(e.cmdr)}</span>
+                        <span style="color: #f0883e;">${e.credits}M</span>
+                        <span style="color: #8b949e;">${e.system}</span>
+                        <span style="color: #a371f7;">${e.status}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Debug info
+            document.getElementById('debug-info').innerHTML = `
+                <div>Redis Connected: <span class="${debug.redis_connected ? 'debug-ok' : 'debug-warn'}">${debug.redis_connected}</span></div>
+                <div>Redis URL Set: <span class="${debug.redis_url_set ? 'debug-ok' : 'debug-warn'}">${debug.redis_url_set}</span></div>
+                <div>Queue Count: ${debug.queue_count}</div>
+                <div>Wings Count: ${debug.wings_count}</div>
+            `;
+
+            // History table (last 100, newest first)
+            const recent = history.slice(-100).reverse();
+            document.getElementById('history-body').innerHTML = recent.map(h => `
+                <tr>
+                    <td style="color: #58a6ff;">${esc(h.cmdr)}</td>
+                    <td style="color: #f0883e;">${h.credits}M</td>
+                    <td>${h.system || '-'}</td>
+                    <td><span class="status-badge ${h.status}">${h.status.replace('_', ' ')}</span></td>
+                    <td style="color: #8b949e;">${new Date(h.timestamp).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function clearQueue() {
+            if (!confirm('Clear ALL queue entries and active wings?')) return;
+            await fetch('/api/queue/admin-clear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            refresh();
+        }
+
+        async function clearHistory() {
+            if (!confirm('Clear ALL history records?')) return;
+            await fetch('/api/admin/clear-history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            refresh();
+        }
+
+        async function exportData() {
+            const res = await fetch('/api/admin/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            const data = await res.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wmm-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!confirm('Import backup? This will REPLACE current data.')) {
+                event.target.value = '';
+                return;
+            }
+            const text = await file.text();
+            const data = JSON.parse(text);
+            data.password = adminPw;
+            await fetch('/api/admin/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            event.target.value = '';
+            refresh();
+            alert('Import complete!');
+        }
+
+        function esc(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        // Allow Enter key to login
+        document.getElementById('password').addEventListener('keypress', e => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
