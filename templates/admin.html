@@ -6,6 +6,9 @@
     <title>WMM Admin</title>
     <link rel="stylesheet" href="/static/style.css?v=5">
     <style>
+        /* ========================================
+           Admin Layout
+           ======================================== */
         .admin-header {
             display: flex;
             justify-content: space-between;
@@ -16,6 +19,9 @@
         .back-link { color: #58a6ff; text-decoration: none; }
         .back-link:hover { text-decoration: underline; }
 
+        /* ========================================
+           Login Form
+           ======================================== */
         .login-form {
             max-width: 300px;
             margin: 100px auto;
@@ -43,6 +49,9 @@
         .admin-content { display: none; }
         .admin-content.visible { display: block; }
 
+        /* ========================================
+           Stats Grid
+           ======================================== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -66,6 +75,9 @@
             text-transform: uppercase;
         }
 
+        /* ========================================
+           Sections
+           ======================================== */
         .admin-section {
             background: #161b22;
             border-radius: 8px;
@@ -80,6 +92,9 @@
             padding-bottom: 8px;
         }
 
+        /* ========================================
+           Buttons
+           ======================================== */
         .admin-actions {
             display: flex;
             gap: 12px;
@@ -91,20 +106,102 @@
             border: none;
             cursor: pointer;
             font-weight: 500;
+            transition: opacity 0.15s;
         }
-        .admin-btn.danger {
-            background: #f85149;
-            color: #fff;
+        .admin-btn:hover { opacity: 0.85; }
+        .admin-btn.danger { background: #f85149; color: #fff; }
+        .admin-btn.warning { background: #d29922; color: #0d1117; }
+        .admin-btn.info { background: #1f6feb; color: #fff; }
+        .admin-btn.success { background: #238636; color: #fff; }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
         }
-        .admin-btn.warning {
-            background: #d29922;
-            color: #0d1117;
+        .btn-sm:hover { opacity: 0.85; }
+        .btn-sm.danger { background: #f85149; color: #fff; }
+        .btn-sm.warning { background: #d29922; color: #0d1117; }
+        .btn-sm.info { background: #1f6feb; color: #fff; }
+        .btn-sm.success { background: #238636; color: #fff; }
+
+        /* ========================================
+           Queue Table
+           ======================================== */
+        .queue-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
         }
-        .admin-btn.info {
-            background: #1f6feb;
-            color: #fff;
+        .queue-table th {
+            text-align: left;
+            padding: 10px 8px;
+            background: #0d1117;
+            color: #8b949e;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+        .queue-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #21262d;
+            vertical-align: middle;
+        }
+        .queue-table tr:hover { background: #0d1117; }
+
+        .queue-table .cmdr { color: #58a6ff; font-weight: 600; }
+        .queue-table .credits { color: #f0883e; font-weight: 700; }
+        .queue-table .system { color: #a371f7; }
+        .queue-table .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
+        /* ========================================
+           Wings Section
+           ======================================== */
+        .wing-card {
+            background: #0d1117;
+            border: 1px solid #238636;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .wing-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .wing-card-title {
+            color: #3fb950;
+            font-weight: 600;
+        }
+        .wing-members-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .wing-member-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #161b22;
+            border-radius: 4px;
+        }
+        .wing-member-info {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ========================================
+           History Table
+           ======================================== */
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -121,9 +218,7 @@
             padding: 8px;
             border-bottom: 1px solid #21262d;
         }
-        .history-table tr:hover {
-            background: #0d1117;
-        }
+        .history-table tr:hover { background: #0d1117; }
 
         .status-badge {
             padding: 2px 8px;
@@ -135,12 +230,15 @@
         .status-badge.expired { background: rgba(139, 148, 158, 0.2); color: #8b949e; }
         .status-badge.wing_formed { background: rgba(35, 134, 54, 0.2); color: #3fb950; }
         .status-badge.admin_cleared { background: rgba(187, 128, 9, 0.2); color: #d29922; }
+        .status-badge.admin_deleted { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+        .status-badge.admin_kicked { background: rgba(163, 113, 247, 0.2); color: #a371f7; }
 
-        .queue-preview {
-            max-height: 300px;
-            overflow-y: auto;
-        }
+        .status-badge.ready { background: rgba(35, 134, 54, 0.2); color: #3fb950; }
+        .status-badge.waiting { background: rgba(187, 128, 9, 0.2); color: #d29922; }
 
+        /* ========================================
+           Debug Info
+           ======================================== */
         .debug-info {
             font-family: monospace;
             font-size: 0.85rem;
@@ -151,22 +249,87 @@
         .debug-info div { margin: 4px 0; }
         .debug-ok { color: #3fb950; }
         .debug-warn { color: #d29922; }
+
+        /* ========================================
+           Edit Modal
+           ======================================== */
+        .admin-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .admin-modal.hidden { display: none; }
+        .admin-modal-content {
+            background: #161b22;
+            padding: 24px;
+            border-radius: 8px;
+            min-width: 360px;
+            border: 1px solid #30363d;
+        }
+        .admin-modal-content h3 {
+            color: #f0883e;
+            margin-bottom: 16px;
+        }
+        .admin-modal-field {
+            margin-bottom: 12px;
+        }
+        .admin-modal-field label {
+            display: block;
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .admin-modal-field input,
+        .admin-modal-field select {
+            width: 100%;
+            padding: 8px 10px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 4px;
+        }
+        .admin-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .admin-modal-actions button {
+            flex: 1;
+        }
+
+        /* ========================================
+           Empty State
+           ======================================== */
+        .empty-state {
+            color: #8b949e;
+            text-align: center;
+            padding: 24px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Login Form -->
         <div id="login" class="login-form">
             <h2 style="color: #f85149; margin-bottom: 20px;">Admin Login</h2>
             <input type="password" id="password" placeholder="Password">
             <button onclick="login()">Login</button>
         </div>
 
+        <!-- Admin Content -->
         <div id="admin" class="admin-content">
             <div class="admin-header">
-                <h1>Admin Panel</h1>
+                <h1>🛡️ Admin Panel</h1>
                 <a href="/" class="back-link">← Back to Queue</a>
             </div>
 
+            <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value" id="stat-queue">0</div>
@@ -182,13 +345,21 @@
                 </div>
             </div>
 
+            <!-- Queue Management -->
             <div class="admin-section">
-                <h2>Current Queue</h2>
-                <div id="queue-preview" class="queue-preview"></div>
+                <h2>📋 Queue Management</h2>
+                <div id="queue-table-container"></div>
             </div>
 
+            <!-- Active Wings -->
             <div class="admin-section">
-                <h2>Actions</h2>
+                <h2>🚀 Active Wings</h2>
+                <div id="wings-container"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="admin-section">
+                <h2>⚡ Bulk Actions</h2>
                 <div class="admin-actions">
                     <button onclick="exportData()" class="admin-btn info">Export Backup</button>
                     <button onclick="document.getElementById('import-file').click()" class="admin-btn info">Import Backup</button>
@@ -199,13 +370,15 @@
                 </div>
             </div>
 
+            <!-- Debug -->
             <div class="admin-section">
-                <h2>Debug Info</h2>
+                <h2>🔧 Debug Info</h2>
                 <div id="debug-info" class="debug-info"></div>
             </div>
 
+            <!-- History -->
             <div class="admin-section">
-                <h2>Entry History (Last 100)</h2>
+                <h2>📜 Entry History (Last 100)</h2>
                 <table class="history-table">
                     <thead>
                         <tr>
@@ -222,9 +395,52 @@
         </div>
     </div>
 
-    <script>
-        let adminPw = '';
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="admin-modal hidden">
+        <div class="admin-modal-content">
+            <h3>Edit Entry</h3>
+            <input type="hidden" id="edit-id">
+            <div class="admin-modal-field">
+                <label>CMDR Name</label>
+                <input type="text" id="edit-cmdr">
+            </div>
+            <div class="admin-modal-field">
+                <label>Credits (M)</label>
+                <input type="number" id="edit-credits" min="1" max="999">
+            </div>
+            <div class="admin-modal-field">
+                <label>Stations</label>
+                <input type="number" id="edit-stations" min="1" max="10">
+            </div>
+            <div class="admin-modal-field">
+                <label>Missions</label>
+                <input type="number" id="edit-missions" min="1" max="20">
+            </div>
+            <div class="admin-modal-field">
+                <label>Status</label>
+                <select id="edit-status">
+                    <option value="ready">Ready</option>
+                    <option value="waiting">Waiting</option>
+                </select>
+            </div>
+            <div class="admin-modal-actions">
+                <button onclick="saveEdit()" class="admin-btn success">Save</button>
+                <button onclick="closeEditModal()" class="admin-btn" style="background:#30363d;color:#c9d1d9;">Cancel</button>
+            </div>
+        </div>
+    </div>
 
+    <script>
+        // ============================================
+        // State
+        // ============================================
+        let adminPw = '';
+        let currentQueue = [];
+        let currentWings = [];
+
+        // ============================================
+        // Auth
+        // ============================================
         async function login() {
             adminPw = document.getElementById('password').value;
             const res = await fetch('/api/admin/debug', {
@@ -241,54 +457,130 @@
             }
         }
 
+        // ============================================
+        // Data Fetching
+        // ============================================
         async function refresh() {
             const [queueRes, wingsRes, historyRes, debugRes] = await Promise.all([
                 fetch('/api/queue'),
                 fetch('/api/wings'),
-                fetch('/api/admin/history', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: adminPw })
-                }),
-                fetch('/api/admin/debug', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: adminPw })
-                })
+                adminFetch('/api/admin/history'),
+                adminFetch('/api/admin/debug')
             ]);
 
-            const queue = await queueRes.json();
-            const wings = await wingsRes.json();
+            currentQueue = await queueRes.json();
+            currentWings = await wingsRes.json();
             const history = await historyRes.json();
             const debug = await debugRes.json();
 
-            document.getElementById('stat-queue').textContent = queue.length;
-            document.getElementById('stat-wings').textContent = wings.length;
+            // Stats
+            document.getElementById('stat-queue').textContent = currentQueue.length;
+            document.getElementById('stat-wings').textContent = currentWings.length;
             document.getElementById('stat-history').textContent = history.length;
 
-            // Queue preview
-            if (queue.length === 0) {
-                document.getElementById('queue-preview').innerHTML = '<p style="color: #8b949e;">Queue is empty</p>';
-            } else {
-                document.getElementById('queue-preview').innerHTML = queue.map(e => `
-                    <div style="padding: 6px 0; border-bottom: 1px solid #21262d;">
-                        <span style="color: #58a6ff;">${esc(e.cmdr)}</span>
-                        <span style="color: #f0883e;">${e.credits}M</span>
-                        <span style="color: #8b949e;">${e.system}</span>
-                        <span style="color: #a371f7;">${e.status}</span>
-                    </div>
-                `).join('');
+            // Render sections
+            renderQueueTable();
+            renderWings();
+            renderDebug(debug);
+            renderHistory(history);
+        }
+
+        async function adminFetch(url, options = {}) {
+            return fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw, ...options.body }),
+                ...options
+            });
+        }
+
+        // ============================================
+        // Rendering
+        // ============================================
+        function renderQueueTable() {
+            const container = document.getElementById('queue-table-container');
+
+            if (currentQueue.length === 0) {
+                container.innerHTML = '<div class="empty-state">Queue is empty</div>';
+                return;
             }
 
-            // Debug info
+            container.innerHTML = `
+                <table class="queue-table">
+                    <thead>
+                        <tr>
+                            <th>CMDR</th>
+                            <th>Credits</th>
+                            <th>Stations</th>
+                            <th>System</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${currentQueue.map(e => `
+                            <tr>
+                                <td class="cmdr">${esc(e.cmdr)}</td>
+                                <td class="credits">${e.credits}M</td>
+                                <td>${e.stations}</td>
+                                <td class="system">${esc(e.system)}</td>
+                                <td>
+                                    <span class="status-badge ${e.status}">${e.status}</span>
+                                    ${e.readyUp ? '<span class="status-badge ready" style="margin-left:4px;">✓ UP</span>' : ''}
+                                </td>
+                                <td class="actions">
+                                    <button onclick="openEditModal('${e.id}')" class="btn-sm info">Edit</button>
+                                    ${e.status !== 'ready' ? `<button onclick="forceReady('${e.id}')" class="btn-sm success">Ready</button>` : ''}
+                                    ${e.status === 'ready' && !e.readyUp ? `<button onclick="forceReadyUp('${e.id}')" class="btn-sm warning">Ready Up</button>` : ''}
+                                    <button onclick="deleteEntry('${e.id}')" class="btn-sm danger">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderWings() {
+            const container = document.getElementById('wings-container');
+
+            if (currentWings.length === 0) {
+                container.innerHTML = '<div class="empty-state">No active wings</div>';
+                return;
+            }
+
+            container.innerHTML = currentWings.map(wing => `
+                <div class="wing-card">
+                    <div class="wing-card-header">
+                        <span class="wing-card-title">🚀 ${esc(wing.system)} Wing</span>
+                        <span style="color:#8b949e;font-size:0.8rem;">Formed: ${new Date(wing.formed).toLocaleString()}</span>
+                    </div>
+                    <div class="wing-members-list">
+                        ${wing.members.map(m => `
+                            <div class="wing-member-row">
+                                <div class="wing-member-info">
+                                    <span style="color:#58a6ff;font-weight:600;">${esc(m.cmdr)}</span>
+                                    <span style="color:#f0883e;">${m.credits}M</span>
+                                    <span style="color:#8b949e;">${m.stations} stn</span>
+                                </div>
+                                <button onclick="kickFromWing('${wing.id}', '${m.id}')" class="btn-sm danger">Kick</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderDebug(debug) {
             document.getElementById('debug-info').innerHTML = `
                 <div>Redis Connected: <span class="${debug.redis_connected ? 'debug-ok' : 'debug-warn'}">${debug.redis_connected}</span></div>
                 <div>Redis URL Set: <span class="${debug.redis_url_set ? 'debug-ok' : 'debug-warn'}">${debug.redis_url_set}</span></div>
                 <div>Queue Count: ${debug.queue_count}</div>
                 <div>Wings Count: ${debug.wings_count}</div>
             `;
+        }
 
-            // History table (last 100, newest first)
+        function renderHistory(history) {
             const recent = history.slice(-100).reverse();
             document.getElementById('history-body').innerHTML = recent.map(h => `
                 <tr>
@@ -301,32 +593,102 @@
             `).join('');
         }
 
-        async function clearQueue() {
-            if (!confirm('Clear ALL queue entries and active wings?')) return;
-            await fetch('/api/queue/admin-clear', {
+        // ============================================
+        // Admin Actions
+        // ============================================
+        async function deleteEntry(id) {
+            if (!confirm('Delete this entry?')) return;
+            await fetch(`/api/admin/entry/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            refresh();
+        }
+
+        async function forceReady(id) {
+            await fetch(`/api/admin/entry/${id}/force-ready`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: adminPw })
             });
+            refresh();
+        }
+
+        async function forceReadyUp(id) {
+            await fetch(`/api/admin/entry/${id}/force-readyup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            refresh();
+        }
+
+        async function kickFromWing(wingId, entryId) {
+            if (!confirm('Kick this member from the wing? If wing drops below 4, all members return to queue.')) return;
+            await fetch(`/api/admin/wing/${wingId}/kick/${entryId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPw })
+            });
+            refresh();
+        }
+
+        // ============================================
+        // Edit Modal
+        // ============================================
+        function openEditModal(id) {
+            const entry = currentQueue.find(e => e.id === id);
+            if (!entry) return;
+
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-cmdr').value = entry.cmdr;
+            document.getElementById('edit-credits').value = entry.credits;
+            document.getElementById('edit-stations').value = entry.stations;
+            document.getElementById('edit-missions').value = entry.missions || 20;
+            document.getElementById('edit-status').value = entry.status;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function saveEdit() {
+            const id = document.getElementById('edit-id').value;
+            await fetch(`/api/admin/entry/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password: adminPw,
+                    cmdr: document.getElementById('edit-cmdr').value,
+                    credits: parseInt(document.getElementById('edit-credits').value),
+                    stations: parseInt(document.getElementById('edit-stations').value),
+                    missions: parseInt(document.getElementById('edit-missions').value),
+                    status: document.getElementById('edit-status').value
+                })
+            });
+            closeEditModal();
+            refresh();
+        }
+
+        // ============================================
+        // Bulk Actions
+        // ============================================
+        async function clearQueue() {
+            if (!confirm('Clear ALL queue entries and active wings?')) return;
+            await adminFetch('/api/queue/admin-clear');
             refresh();
         }
 
         async function clearHistory() {
             if (!confirm('Clear ALL history records?')) return;
-            await fetch('/api/admin/clear-history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: adminPw })
-            });
+            await adminFetch('/api/admin/clear-history');
             refresh();
         }
 
         async function exportData() {
-            const res = await fetch('/api/admin/export', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: adminPw })
-            });
+            const res = await adminFetch('/api/admin/export');
             const data = await res.json();
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -357,13 +719,17 @@
             alert('Import complete!');
         }
 
+        // ============================================
+        // Utilities
+        // ============================================
         function esc(text) {
+            if (!text) return '';
             const d = document.createElement('div');
             d.textContent = text;
             return d.innerHTML;
         }
 
-        // Allow Enter key to login
+        // Enter key to login
         document.getElementById('password').addEventListener('keypress', e => {
             if (e.key === 'Enter') login();
         });
